@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Courses</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Courses">
+<meta name="theme-color" content="#F4F6F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1511" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-512.png">
+<link rel="manifest" href="manifest.json">
+<style>
+/* Mise en page : une colonne pensée pour le pouce, en-tête collant, rayons empilés dans l'ordre du magasin. */
+:root {
+  --bg: #F4F6F1;
+  --surface: #FFFFFF;
+  --ink: #18231C;
+  --muted: #66736A;
+  --line: #DDE3D8;
+  --accent: #2E7A4E;
+  --accent-soft: #E1EEE5;
+  --on-accent: #FFFFFF;
+  --store: #C2571A;
+  --store-soft: #F8E7DC;
+  --danger: #B3261E;
+  --shadow: 0 10px 30px rgba(24, 35, 28, .14);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --font-round: ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1511; --surface: #18201A; --ink: #E8EEE6; --muted: #93A096; --line: #29332B;
+    --accent: #5DBB82; --accent-soft: #1F3326; --on-accent: #0B140E;
+    --store: #F08A4B; --store-soft: #3A2417; --danger: #F2827A;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: 16px/1.4 var(--font);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-user-select: none; user-select: none;
+}
+input, textarea, select, button { font: inherit; color: inherit; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* En-tête */
+.top {
+  position: sticky; top: 0; z-index: 5; background: var(--bg);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px); padding-bottom: 10px;
+  border-bottom: 1px solid transparent; transition: border-color .2s;
+}
+.top.scrolled { border-bottom-color: var(--line); }
+.title-row { display: flex; align-items: center; gap: 12px; }
+.title-row h1 { margin: 0; font: 800 30px/1.1 var(--font-round); letter-spacing: -.02em; flex: 1; }
+.count { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: 0; background: var(--surface);
+  display: grid; place-items: center; color: var(--ink); box-shadow: 0 1px 0 var(--line);
+}
+.icon-btn svg { width: 22px; height: 22px; }
+
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 12px; padding: 4px; background: var(--line); border-radius: 14px; }
+.modes button { border: 0; background: transparent; padding: 9px 8px; border-radius: 11px; font-weight: 650; color: var(--muted); }
+.modes button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+body.store .modes button[aria-pressed="true"] { color: var(--store); }
+
+/* Ajout */
+.add { display: flex; gap: 8px; margin-top: 12px; }
+.add input {
+  flex: 1; min-width: 0; height: 50px; border-radius: 14px; border: 1.5px solid var(--line);
+  background: var(--surface); padding: 0 16px; font-size: 17px;
+}
+.add input:focus { border-color: var(--accent); outline: none; }
+.add button { width: 50px; height: 50px; border-radius: 14px; border: 0; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; }
+.add button svg { width: 24px; height: 24px; }
+.paste-btn {
+  margin-top: 8px; width: 100%; border: 1.5px dashed var(--line); background: transparent; border-radius: 14px;
+  padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-weight: 600; font-size: 15px;
+}
+.paste-btn svg { width: 18px; height: 18px; color: var(--accent); }
+
+/* Liste */
+main { padding-top: 6px; padding-bottom: 120px; }
+.status { font-size: 13px; color: var(--muted); padding: 6px 0; min-height: 26px; }
+.status.err { color: var(--danger); }
+.aisle { margin-top: 18px; }
+.aisle h2 {
+  margin: 0 0 6px; font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  display: flex; gap: 8px; align-items: baseline;
+}
+.aisle h2 .n { font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: 0; }
+.items { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 0 var(--line); }
+.item {
+  display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-top: 1px solid var(--line);
+  min-height: 52px; transition: opacity .25s, transform .25s, background-color .15s;
+}
+.item:first-child { border-top: 0; }
+.item:active { background: var(--accent-soft); }
+.item .name { flex: 1; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
+.qty { font-size: 13px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 2px 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.by { font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; width: 22px; height: 22px; display: grid; place-items: center; flex: none; }
+.item.pending { opacity: .5; }
+
+/* Mode magasin */
+body.store .item { min-height: 60px; padding: 15px 14px; }
+body.store .item .name { font-size: 19px; font-weight: 550; }
+body.store .item:active { background: var(--store-soft); }
+body.store .qty { color: var(--store); background: var(--store-soft); }
+.tick { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; transition: all .2s; }
+.tick svg { width: 16px; height: 16px; opacity: 0; color: #fff; }
+.item.taken .tick { background: var(--store); border-color: var(--store); }
+.item.taken .tick svg { opacity: 1; }
+.item.taken .name { text-decoration: line-through; color: var(--muted); }
+.item.gone { opacity: 0; transform: translateX(30px); }
+.progress { height: 6px; border-radius: 3px; background: var(--line); margin-top: 12px; overflow: hidden; }
+.progress div { height: 100%; background: var(--store); width: 0; transition: width .3s; }
+
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty strong { display: block; color: var(--ink); font: 700 20px/1.3 var(--font-round); margin-bottom: 6px; }
+
+/* Petit message en bas */
+.toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--bg); border-radius: 14px; padding: 10px 10px 10px 16px; display: flex; gap: 14px; align-items: center;
+  box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: all .25s; z-index: 30; width: max-content; max-width: calc(100% - 32px); font-size: 15px;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.toast button { border: 0; background: transparent; color: var(--accent); font-weight: 750; padding: 6px 8px; }
+body.store .toast button { color: var(--store); }
+@media (prefers-color-scheme: dark) { .toast button { filter: brightness(.8); } }
+
+/* Feuilles du bas */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; opacity: 0; transition: opacity .2s; }
+.scrim.show { opacity: 1; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--bg); border-radius: 22px 22px 0 0;
+  max-height: 88vh; overflow-y: auto; transform: translateY(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 20px) max(16px, env(safe-area-inset-left, 0px));
+  box-shadow: var(--shadow);
+}
+.sheet.show { transform: translateY(0); }
+.sheet .grip { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 4px auto 14px; }
+.sheet h3 { margin: 0 0 4px; font: 750 21px/1.2 var(--font-round); }
+.sheet p.hint { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.sheet-inner { max-width: 560px; margin: 0 auto; display: grid; gap: 12px; }
+label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var(--muted); }
+.f input, .f textarea, .f select {
+  border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px 14px; font-size: 17px; color: var(--ink); width: 100%;
+}
+.f textarea { min-height: 140px; resize: vertical; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 12px; font-size: 14px; font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn { border: 0; border-radius: 14px; padding: 14px; font-weight: 700; font-size: 16px; background: var(--accent); color: var(--on-accent); width: 100%; }
+.btn.ghost { background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 var(--line); }
+.btn.danger { background: transparent; color: var(--danger); }
+.btn:disabled { opacity: .5; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.order { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 14px; overflow: hidden; }
+.order li { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 14px; border-top: 1px solid var(--line); }
+.order li:first-child { border-top: 0; }
+.order .pos { width: 22px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.order .lbl { flex: 1; min-width: 0; }
+.order button { width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 18px; }
+.order button:disabled { opacity: .25; }
+
+.results { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 14px; overflow: hidden; }
+.results li { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.results li:first-child { border-top: 0; }
+.results input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); grid-row: span 2; }
+.results .rn { font-weight: 600; }
+.results select { grid-column: 2; border: 0; background: transparent; color: var(--muted); font-size: 13px; padding: 0; width: auto; }
+
+/* Écran d'installation */
+.setup { padding-top: calc(env(safe-area-inset-top, 0px) + 40px); padding-bottom: 40px; display: grid; gap: 14px; }
+.setup h1 { margin: 0; font: 800 34px/1.1 var(--font-round); }
+.setup p { margin: 0; color: var(--muted); }
+.link { border: 0; background: none; color: var(--accent); font-weight: 650; padding: 8px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Installation -->
+<section id="ecranSetup" class="wrap setup" hidden>
+  <h1>Courses</h1>
+  <p>Connecte l'app à ton Google Sheet. Tu ne le fais qu'une fois par téléphone.</p>
+  <label class="f">Adresse du script
+    <input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+  </label>
+  <label class="f">Code secret
+    <input id="cfgSecret" type="password" autocomplete="off" autocapitalize="off">
+  </label>
+  <label class="f">Ton prénom (pour savoir qui a ajouté quoi)
+    <input id="cfgPrenom" type="text" autocomplete="given-name">
+  </label>
+  <button class="btn" id="btnConnecter">Connecter</button>
+  <div class="status" id="setupStatus"></div>
+  <button class="link" id="btnDemo">Essayer sans rien installer (démo)</button>
+</section>
+
+<!-- App -->
+<div id="ecranApp" hidden>
+  <header class="top" id="top">
+    <div class="wrap">
+      <div class="title-row">
+        <h1 id="titre">Ma liste</h1>
+        <span class="count" id="compteur"></span>
+        <button class="icon-btn" id="btnReglages" aria-label="Réglages">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+      </div>
+      <div class="modes" role="group" aria-label="Mode">
+        <button id="modeListe" aria-pressed="true">Ma liste</button>
+        <button id="modeMagasin" aria-pressed="false">Au magasin</button>
+      </div>
+      <div id="zoneAjout">
+        <form class="add" id="formAjout" autocomplete="off">
+          <input id="champAjout" enterkeyhint="done" placeholder="Ajouter… (ex : 2 baguettes, lait)" aria-label="Ajouter un article">
+          <button type="submit" aria-label="Ajouter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </form>
+        <button class="paste-btn" id="btnColler">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/></svg>
+          Coller un message (papa, invités…)
+        </button>
+      </div>
+      <div class="progress" id="progression" hidden><div></div></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="status" id="statut"></div>
+    <div id="liste"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"><span id="toastTexte"></span><button id="toastAction"></button></div>
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- Modifier un article -->
+<div class="sheet" id="feuilleArticle" role="dialog" aria-modal="true" aria-labelledby="faTitre" hidden>
+  <div class="sheet-inner">
+    <div class="grip"></div>
+    <h3 id="faTitre">Article</h3>
+    <div class="row2">
+      <label class="f">Article <input id="faNom" type="text"></label>
+      <label class="f">Quantité <input id="faQte" type="text" placeholder="ex : 2"></label>
+    </div>
+    <label class="f">Rayon (l'app s'en souviendra)</label>
+    <div class="chips" id="faRayons"></div>
+    <button class="btn" id="faEnregistrer">Enregistrer</button>
+    <button class="btn danger" id="faSupprimer">Retirer de la liste</button>
+  </div>
+</div>
+
+<!-- Coller un message -->
+<div class="sheet" id="feuilleColler" role="dialog" aria-modal="true" aria-labelledby="fcTitre" hidden>
+  <div class="sheet-inner">
+    <div class="grip"></div>
+    <h3 id="fcTitre">Coller un message</h3>
+    <p class="hint">Colle le SMS ou le message WhatsApp tel quel, avec les fautes. L'IA trie tout.</p>
+    <label class="f" for="fcTexte">Message</label>
+    <textarea class="f" id="fcTexte" placeholder="Slt fils, tu me prend 2 baguete, du jambon, pq et des yaourt natur stp"></textarea>
+    <button class="btn" id="fcAnalyser">Analyser le message</button>
+    <div class="status" id="fcStatut"></div>
+    <ul class="results" id="fcResultats" hidden></ul>
+    <button class="btn" id="fcAjouter" hidden>Ajouter</button>
+  </div>
+</div>
+
+<!-- Réglages -->
+<div class="sheet" id="feuilleReglages" role="dialog" aria-modal="true" aria-labelledby="frTitre" hidden>
+  <div class="sheet-inner">
+    <div class="grip"></div>
+    <h3 id="frTitre">Mon parcours dans le magasin</h3>
+    <p class="hint">Dicte les rayons dans l'ordre où tu passes (touche le micro du clavier), puis ajuste avec les flèches.</p>
+    <label class="f">Dicter mon parcours
+      <textarea id="frDictee" style="min-height:80px" placeholder="fruits et légumes, boulangerie, frais, boucherie, surgelés…"></textarea>
+    </label>
+    <button class="btn ghost" id="frAppliquer">Appliquer cet ordre</button>
+    <ul class="order" id="frOrdre"></ul>
+    <form class="add" id="frFormRayon" autocomplete="off" style="margin-top:0">
+      <input id="frNouveau" placeholder="Nouveau rayon (ex : Bio)" aria-label="Nouveau rayon">
+      <button type="submit" aria-label="Ajouter le rayon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    </form>
+    <button class="btn" id="frEnregistrer">Enregistrer le parcours</button>
+    <label class="f">Mon prénom <input id="frPrenom" type="text"></label>
+    <button class="btn danger" id="frDeconnecter">Changer de liste / se déconnecter</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const CLE = 'courses.config';
+  const CLE_CACHE = 'courses.cache';
+  const CLE_MODE = 'courses.mode';
+
+  const lire = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+  const ecrire = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+  let config = lire(CLE);
+  let etat = lire(CLE_CACHE) || { articles: [], rayons: [] };
+  let mode = lire(CLE_MODE) === 'magasin' ? 'magasin' : 'liste';
+  let enAttente = [];            // textes en cours d'ajout
+  const retraitsDiff = new Map(); // id -> {timer, article}
+  let file = Promise.resolve();
+  let operations = 0;
+  let wakeLock = null;
+
+  // ---------- Démo (sans Google) ----------
+  const demo = {
+    rayons: ['Fruits & légumes', 'Boulangerie', 'Boucherie & poisson', 'Crèmerie & frais', 'Surgelés', 'Épicerie salée', 'Épicerie sucrée', 'Boissons', 'Hygiène & beauté', 'Entretien', 'Autre'],
+    mots: {
+      'Fruits & légumes': ['pomme', 'banane', 'tomate', 'salade', 'carotte', 'oignon', 'citron', 'courgette', 'avocat'],
+      'Boulangerie': ['pain', 'baguette', 'croissant', 'brioche'],
+      'Boucherie & poisson': ['poulet', 'steak', 'saumon', 'viande', 'saucisse'],
+      'Crèmerie & frais': ['lait', 'beurre', 'yaourt', 'fromage', 'oeuf', 'œuf', 'jambon', 'creme', 'crème'],
+      'Surgelés': ['glace', 'frite', 'pizza'],
+      'Épicerie salée': ['pate', 'pâte', 'riz', 'huile', 'sel', 'moutarde', 'chips'],
+      'Épicerie sucrée': ['sucre', 'cafe', 'café', 'chocolat', 'confiture', 'biscuit', 'cereale', 'céréale'],
+      'Boissons': ['eau', 'jus', 'coca', 'biere', 'bière', 'vin'],
+      'Hygiène & beauté': ['pq', 'papier toilette', 'dentifrice', 'shampoing', 'savon'],
+      'Entretien': ['lessive', 'eponge', 'éponge', 'sac poubelle', 'sopalin']
+    },
+    deviner(nom) {
+      const n = ' ' + nom.toLowerCase() + ' ';
+      for (const r in this.mots) if (this.mots[r].some(m => n.includes(' ' + m))) return r;
+      return 'Autre';
+    },
+    charger() {
+      const s = lire('courses.demo');
+      if (s) return s;
+      const ex = [['Bananes', ''], ['Tomates', '6'], ['Baguette', '2'], ['Lait', ''], ['Beurre', ''], ['Yaourts nature', '8'], ['Steak haché', '4'], ['Pâtes', ''], ['Café', ''], ['Papier toilette', '']];
+      return { rayons: this.rayons.slice(), articles: ex.map(([nom, quantite], i) => ({ id: 'd' + i, nom, quantite, rayon: this.deviner(nom), par: i % 3 ? 'Moi' : 'Elle' })) };
+    },
+    async appel(action, p) {
+      await new Promise(r => setTimeout(r, 250));
+      const s = this.charger();
+      const decouper = t => t.split(/\n|,|;|\bet\b/i).map(x => x.trim()).filter(Boolean).map(x => {
+        const m = x.match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|cl)?\s+(.*)$/i);
+        const nom = (m ? m[3] : x).replace(/^(?:(?:de l|d|l)'\s*|(?:du|des|de la|de|un|une|le|la|les)\s+)/i, '');
+        return { nom: nom.charAt(0).toUpperCase() + nom.slice(1).toLowerCase(), quantite: m ? m[1] + (m[2] ? ' ' + m[2] : '') : '' };
+      });
+      if (action === 'ajouter') {
+        const liste = p.articles || decouper(p.texte || '');
+        liste.forEach(a => {
+          if (s.articles.some(x => x.nom.toLowerCase() === a.nom.toLowerCase())) return;
+          s.articles.push({ id: 'd' + Date.now() + Math.random().toString(36).slice(2, 6), nom: a.nom, quantite: a.quantite || '', rayon: a.rayon || this.deviner(a.nom), par: p.par || '' });
+        });
+      } else if (action === 'retirer') {
+        s.articles = s.articles.filter(a => a.id !== p.id);
+      } else if (action === 'modifier') {
+        const a = s.articles.find(x => x.id === p.id);
+        if (a) Object.assign(a, { nom: p.nom || a.nom, quantite: p.quantite ?? a.quantite, rayon: p.rayon || a.rayon });
+      } else if (action === 'rayons') {
+        s.rayons = p.rayons;
+      } else if (action === 'analyser') {
+        return { ok: true, ia: false, articles: decouper(p.texte).map(a => ({ ...a, rayon: this.deviner(a.nom) })) };
+      }
+      ecrire('courses.demo', s);
+      return { ok: true, articles: s.articles, rayons: s.rayons };
+    }
+  };
+
+  // ---------- Échanges avec le Google Sheet ----------
+  async function appel(action, donnees = {}) {
+    const corps = Object.assign({}, donnees, { action, secret: config.secret, par: config.prenom || '' });
+    if (config.url === 'demo') return demo.appel(action, corps);
+    const rep = await fetch(config.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(corps)
+    });
+    if (!rep.ok) throw new Error('Le serveur a répondu ' + rep.status + '.');
+    const json = await rep.json();
+    if (!json.ok) throw new Error(json.erreur || 'Erreur inconnue.');
+    return json;
+  }
+
+  // Les modifications partent une par une, dans l'ordre
+  function envoyer(action, donnees) {
+    operations++;
+    const p = file.then(() => appel(action, donnees)).then(res => {
+      operations--;
+      if (res.articles && operations === 0) appliquer(res);
+      statut('');
+      return res;
+    }, err => {
+      operations--;
+      statut(messageErreur(err), true);
+      throw err;
+    });
+    file = p.catch(() => {});
+    return p;
+  }
+
+  async function rafraichir() {
+    if (!config || operations > 0 || document.hidden) return;
+    try {
+      const res = await appel('liste');
+      if (operations === 0) appliquer(res);
+      statut('');
+    } catch (err) {
+      statut(messageErreur(err), true);
+    }
+  }
+
+  function messageErreur(err) {
+    if (!navigator.onLine) return 'Pas de réseau. La liste affichée est la dernière connue.';
+    return 'Synchronisation impossible : ' + (err && err.message || err);
+  }
+
+  function appliquer(res) {
+    etat = { articles: res.articles || [], rayons: res.rayons || etat.rayons };
+    ecrire(CLE_CACHE, etat);
+    rendre();
+  }
+
+  function statut(txt, erreur) {
+    const s = $('statut');
+    s.textContent = txt;
+    s.classList.toggle('err', !!erreur);
+  }
+
+  // ---------- Affichage ----------
+  function el(tag, props, ...enfants) {
+    const e = document.createElement(tag);
+    if (props) for (const k in props) {
+      if (k === 'class') e.className = props[k];
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), props[k]);
+      else if (k === 'text') e.textContent = props[k];
+      else e.setAttribute(k, props[k]);
+    }
+    enfants.flat().forEach(c => c != null && e.append(c));
+    return e;
+  }
+
+  const coche = () => {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.innerHTML = '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    return s;
+  };
+
+  function articlesVisibles() {
+    return etat.articles.filter(a => !retraitsDiff.has(a.id));
+  }
+
+  function rendre() {
+    const magasin = mode === 'magasin';
+    document.body.classList.toggle('store', magasin);
+    $('modeListe').setAttribute('aria-pressed', String(!magasin));
+    $('modeMagasin').setAttribute('aria-pressed', String(magasin));
+    $('titre').textContent = magasin ? 'Au magasin' : 'Ma liste';
+    $('zoneAjout').hidden = magasin;
+
+    const articles = articlesVisibles();
+    const n = articles.length;
+    $('compteur').textContent = n === 0 ? '' : n + (magasin ? (n > 1 ? ' restants' : ' restant') : (n > 1 ? ' articles' : ' article'));
+
+    const prog = $('progression');
+    prog.hidden = !magasin;
+    if (magasin) {
+      const total = Math.max(sessionMax(n), 1);
+      prog.firstElementChild.style.width = Math.round((1 - n / total) * 100) + '%';
+    }
+
+    const zone = $('liste');
+    zone.replaceChildren();
+
+    if (!magasin && enAttente.length) {
+      zone.append(el('section', { class: 'aisle' },
+        el('h2', { text: 'Ajout en cours…' }),
+        el('ul', { class: 'items' }, enAttente.map(t => el('li', { class: 'item pending' }, el('span', { class: 'name', text: t }))))
+      ));
+    }
+
+    if (n === 0 && !enAttente.length) {
+      zone.append(magasin
+        ? el('div', { class: 'empty' }, el('strong', { text: 'Tout est dans le caddie.' }), 'Bonnes courses terminées !')
+        : el('div', { class: 'empty' }, el('strong', { text: 'La liste est vide.' }), 'Tape un article au-dessus, ou dis « Dis Siri, Courses ».'));
+      return;
+    }
+
+    const ordre = etat.rayons.length ? etat.rayons.slice() : ['Autre'];
+    const groupes = new Map(ordre.map(r => [r, []]));
+    articles.forEach(a => {
+      const r = groupes.has(a.rayon) ? a.rayon : 'Autre';
+      if (!groupes.has(r)) groupes.set(r, []);
+      groupes.get(r).push(a);
+    });
+
+    groupes.forEach((liste, rayon) => {
+      if (!liste.length) return;
+      liste.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+      zone.append(el('section', { class: 'aisle' },
+        el('h2', null, rayon, el('span', { class: 'n', text: String(liste.length) })),
+        el('ul', { class: 'items' }, liste.map(a => ligneArticle(a, magasin)))
+      ));
+    });
+  }
+
+  // Pour la barre de progression : le plus grand nombre d'articles vu depuis l'entrée en mode magasin
+  let maxMagasin = 0;
+  function sessionMax(n) { maxMagasin = Math.max(maxMagasin, n); return maxMagasin; }
+
+  function ligneArticle(a, magasin) {
+    const li = el('li', { class: 'item', role: 'button', tabindex: '0', 'data-id': a.id });
+    if (magasin) li.append(el('span', { class: 'tick' }, coche()));
+    li.append(el('span', { class: 'name', text: a.nom }));
+    if (a.quantite) li.append(el('span', { class: 'qty', text: a.quantite }));
+    if (!magasin && a.par) li.append(el('span', { class: 'by', title: 'Ajouté par ' + a.par, text: a.par.charAt(0).toUpperCase() }));
+    const action = () => magasin ? prendre(a, li) : ouvrirArticle(a);
+    li.addEventListener('click', action);
+    li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); action(); } });
+    return li;
+  }
+
+  // ---------- Mode magasin : toucher = c'est pris ----------
+  function prendre(a, li) {
+    if (retraitsDiff.has(a.id)) return;
+    if (navigator.vibrate) navigator.vibrate(15);
+    li.classList.add('taken');
+    const timer = setTimeout(() => validerRetrait(a.id), 4000);
+    retraitsDiff.set(a.id, { timer, article: a });
+    setTimeout(() => { li.classList.add('gone'); }, 250);
+    setTimeout(() => rendre(), 520);
+    toast(a.nom + ' pris', 'Annuler', () => annulerRetrait(a.id));
+  }
+
+  function validerRetrait(id) {
+    const r = retraitsDiff.get(id);
+    if (!r) return;
+    clearTimeout(r.timer);
+    retraitsDiff.delete(id);
+    etat.articles = etat.articles.filter(x => x.id !== id);
+    ecrire(CLE_CACHE, etat);
+    envoyer('retirer', { id }).catch(() => {});
+  }
+
+  function annulerRetrait(id) {
+    const r = retraitsDiff.get(id);
+    if (!r) return;
+    clearTimeout(r.timer);
+    retraitsDiff.delete(id);
+    rendre();
+  }
+
+  function validerTousLesRetraits() {
+    [...retraitsDiff.keys()].forEach(validerRetrait);
+  }
+
+  // ---------- Petit message ----------
+  let toastTimer = null;
+  let toastFn = null;
+  function toast(texte, bouton, fn) {
+    $('toastTexte').textContent = texte;
+    $('toastAction').textContent = bouton || '';
+    $('toastAction').hidden = !bouton;
+    toastFn = fn || null;
+    $('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3800);
+  }
+  $('toastAction').addEventListener('click', () => {
+    $('toast').classList.remove('show');
+    if (toastFn) toastFn();
+    toastFn = null;
+  });
+
+  // ---------- Ajouter ----------
+  $('formAjout').addEventListener('submit', e => {
+    e.preventDefault();
+    const champ = $('champAjout');
+    const texte = champ.value.trim();
+    if (!texte) return;
+    champ.value = '';
+    enAttente.push(texte);
+    rendre();
+    envoyer('ajouter', { texte }).then(res => {
+      if (res.message && /déjà/.test(res.message)) toast(res.message);
+    }).catch(() => {
+      champ.value = texte;
+    }).finally(() => {
+      enAttente = enAttente.filter(t => t !== texte);
+      rendre();
+    });
+  });
+
+  // ---------- Feuilles du bas ----------
+  let feuilleOuverte = null;
+  function ouvrir(id) {
+    fermer();
+    const f = $(id);
+    feuilleOuverte = f;
+    $('scrim').hidden = false;
+    f.hidden = false;
+    requestAnimationFrame(() => { $('scrim').classList.add('show'); f.classList.add('show'); });
+  }
+  function fermer() {
+    if (!feuilleOuverte) return;
+    const f = feuilleOuverte;
+    feuilleOuverte = null;
+    f.classList.remove('show');
+    $('scrim').classList.remove('show');
+    setTimeout(() => { if (feuilleOuverte !== f) { f.hidden = true; if (!feuilleOuverte) $('scrim').hidden = true; } }, 280);
+  }
+  $('scrim').addEventListener('click', fermer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fermer(); });
+
+  // Modifier un article
+  let articleEdite = null;
+  let rayonChoisi = null;
+  function ouvrirArticle(a) {
+    articleEdite = a;
+    rayonChoisi = a.rayon;
+    $('faTitre').textContent = a.nom;
+    $('faNom').value = a.nom;
+    $('faQte').value = a.quantite || '';
+    const chips = $('faRayons');
+    chips.replaceChildren(...etat.rayons.map(r => {
+      const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(r === rayonChoisi), text: r });
+      b.addEventListener('click', () => {
+        rayonChoisi = r;
+        chips.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+      });
+      return b;
+    }));
+    ouvrir('feuilleArticle');
+  }
+  $('faEnregistrer').addEventListener('click', () => {
+    const a = articleEdite;
+    if (!a) return;
+    const modif = { id: a.id, nom: $('faNom').value.trim() || a.nom, quantite: $('faQte').value.trim() };
+    if (rayonChoisi !== a.rayon) modif.rayon = rayonChoisi;
+    Object.assign(a, { nom: modif.nom, quantite: modif.quantite, rayon: rayonChoisi });
+    rendre();
+    fermer();
+    envoyer('modifier', modif).then(() => {
+      if (modif.rayon) toast(a.nom + ' ira toujours dans « ' + modif.rayon + ' »');
+    }).catch(() => {});
+  });
+  $('faSupprimer').addEventListener('click', () => {
+    const a = articleEdite;
+    if (!a) return;
+    fermer();
+    etat.articles = etat.articles.filter(x => x.id !== a.id);
+    rendre();
+    envoyer('retirer', { id: a.id }).catch(() => {});
+  });
+
+  // Coller un message
+  let resultats = [];
+  $('btnColler').addEventListener('click', () => {
+    $('fcResultats').hidden = true;
+    $('fcAjouter').hidden = true;
+    $('fcStatut').textContent = '';
+    ouvrir('feuilleColler');
+  });
+  $('fcAnalyser').addEventListener('click', async () => {
+    const texte = $('fcTexte').value.trim();
+    if (!texte) { $('fcStatut').textContent = 'Colle d\'abord un message.'; return; }
+    const b = $('fcAnalyser');
+    b.disabled = true;
+    $('fcStatut').classList.remove('err');
+    $('fcStatut').textContent = 'L\'IA lit le message…';
+    try {
+      const res = await appel('analyser', { texte });
+      resultats = (res.articles || []).map(a => Object.assign({ garder: true }, a));
+      $('fcStatut').textContent = resultats.length
+        ? (res.ia ? 'Vérifie et décoche ce que tu ne veux pas.' : 'Découpage simple (sans IA). Vérifie la liste.')
+        : 'Aucun article trouvé dans ce message.';
+      afficherResultats();
+    } catch (err) {
+      $('fcStatut').classList.add('err');
+      $('fcStatut').textContent = err.message || String(err);
+    } finally {
+      b.disabled = false;
+    }
+  });
+  function afficherResultats() {
+    const ul = $('fcResultats');
+    ul.replaceChildren(...resultats.map(a => {
+      const cb = el('input', { type: 'checkbox', 'aria-label': a.nom });
+      cb.checked = a.garder;
+      cb.addEventListener('change', () => { a.garder = cb.checked; majBouton(); });
+      const sel = el('select', { 'aria-label': 'Rayon de ' + a.nom }, etat.rayons.map(r => {
+        const o = el('option', { value: r, text: r });
+        if (r === a.rayon) o.selected = true;
+        return o;
+      }));
+      sel.addEventListener('change', () => { a.rayon = sel.value; });
+      return el('li', null, cb, el('span', { class: 'rn', text: (a.quantite ? a.quantite + ' × ' : '') + a.nom }), sel);
+    }));
+    ul.hidden = !resultats.length;
+    majBouton();
+  }
+  function majBouton() {
+    const n = resultats.filter(a => a.garder).length;
+    const b = $('fcAjouter');
+    b.hidden = !resultats.length;
+    b.disabled = n === 0;
+    b.textContent = 'Ajouter ' + n + ' article' + (n > 1 ? 's' : '');
+  }
+  $('fcAjouter').addEventListener('click', () => {
+    const articles = resultats.filter(a => a.garder).map(({ nom, quantite, rayon }) => ({ nom, quantite, rayon }));
+    if (!articles.length) return;
+    fermer();
+    $('fcTexte').value = '';
+    resultats = [];
+    statut('Ajout de ' + articles.length + ' articles…');
+    envoyer('ajouter', { articles }).then(() => toast(articles.length + ' articles ajoutés')).catch(() => {});
+  });
+
+  // Réglages : ordre des rayons
+  let ordreEdite = [];
+  $('btnReglages').addEventListener('click', () => {
+    ordreEdite = etat.rayons.slice();
+    $('frDictee').value = '';
+    $('frPrenom').value = config.prenom || '';
+    afficherOrdre();
+    ouvrir('feuilleReglages');
+  });
+  function afficherOrdre() {
+    $('frOrdre').replaceChildren(...ordreEdite.map((r, i) => {
+      const haut = el('button', { type: 'button', 'aria-label': 'Monter ' + r, text: '↑' });
+      const bas = el('button', { type: 'button', 'aria-label': 'Descendre ' + r, text: '↓' });
+      const suppr = el('button', { type: 'button', 'aria-label': 'Supprimer ' + r, text: '✕' });
+      haut.disabled = i === 0;
+      bas.disabled = i === ordreEdite.length - 1;
+      suppr.disabled = r === 'Autre';
+      haut.addEventListener('click', () => { [ordreEdite[i - 1], ordreEdite[i]] = [ordreEdite[i], ordreEdite[i - 1]]; afficherOrdre(); });
+      bas.addEventListener('click', () => { [ordreEdite[i + 1], ordreEdite[i]] = [ordreEdite[i], ordreEdite[i + 1]]; afficherOrdre(); });
+      suppr.addEventListener('click', () => { ordreEdite.splice(i, 1); afficherOrdre(); });
+      return el('li', null, el('span', { class: 'pos', text: String(i + 1) }), el('span', { class: 'lbl', text: r }), haut, bas, suppr);
+    }));
+  }
+  const sansAccent = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/œ/g, 'oe');
+  const motsDe = s => sansAccent(s).split(/[^a-z0-9]+/).filter(m => m.length > 2).map(m => m.replace(/s$/, ''));
+  $('frAppliquer').addEventListener('click', () => {
+    const morceaux = $('frDictee').value.split(/\n|,|;|\bpuis\b|\bensuite\b|\bapr[eè]s\b/i)
+      .map(s => s.trim().replace(/[.!]+$/, '').replace(/^(?:(?:le|la|les|du|des)\s+|l['’]\s*)/i, '')).filter(Boolean);
+    if (!morceaux.length) return;
+    const restants = ordreEdite.slice();
+    const nouvel = [];
+    morceaux.forEach(m => {
+      const mots = motsDe(m);
+      const trouve = restants.find(r => motsDe(r).some(x => mots.includes(x)));
+      if (trouve) {
+        restants.splice(restants.indexOf(trouve), 1);
+        nouvel.push(trouve);
+      } else if (!nouvel.some(r => sansAccent(r) === sansAccent(m))) {
+        nouvel.push(m.charAt(0).toUpperCase() + m.slice(1));
+      }
+    });
+    ordreEdite = nouvel.concat(restants.filter(r => r !== 'Autre'));
+    if (!ordreEdite.includes('Autre')) ordreEdite.push('Autre');
+    afficherOrdre();
+    toast('Ordre appliqué. Vérifie puis enregistre.');
+  });
+  $('frFormRayon').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('frNouveau').value.trim();
+    if (!v || ordreEdite.includes(v)) return;
+    ordreEdite.splice(Math.max(ordreEdite.indexOf('Autre'), 0), 0, v);
+    $('frNouveau').value = '';
+    afficherOrdre();
+  });
+  $('frEnregistrer').addEventListener('click', () => {
+    const prenom = $('frPrenom').value.trim();
+    if (prenom !== (config.prenom || '')) { config.prenom = prenom; ecrire(CLE, config); }
+    etat.rayons = ordreEdite.slice();
+    rendre();
+    fermer();
+    envoyer('rayons', { rayons: ordreEdite }).then(() => toast('Parcours enregistré')).catch(() => {});
+  });
+  $('frDeconnecter').addEventListener('click', () => {
+    try { localStorage.removeItem(CLE); localStorage.removeItem(CLE_CACHE); } catch (e) {}
+    location.reload();
+  });
+
+  // ---------- Modes ----------
+  function changerMode(m) {
+    if (m === mode) return;
+    validerTousLesRetraits();
+    mode = m;
+    maxMagasin = 0;
+    ecrire(CLE_MODE, mode);
+    rendre();
+    window.scrollTo({ top: 0 });
+    gererEcranAllume();
+  }
+  $('modeListe').addEventListener('click', () => changerMode('liste'));
+  $('modeMagasin').addEventListener('click', () => changerMode('magasin'));
+
+  // En magasin, l'écran reste allumé
+  async function gererEcranAllume() {
+    try {
+      if (mode === 'magasin' && !document.hidden && 'wakeLock' in navigator) {
+        if (!wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+      } else if (wakeLock) {
+        await wakeLock.release(); wakeLock = null;
+      }
+    } catch (e) { wakeLock = null; }
+  }
+
+  window.addEventListener('scroll', () => $('top').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) validerTousLesRetraits();
+    else { rafraichir(); }
+    gererEcranAllume();
+  });
+  window.addEventListener('pagehide', validerTousLesRetraits);
+
+  // ---------- Installation ----------
+  async function connecter(cfg) {
+    const s = $('setupStatus');
+    s.classList.remove('err');
+    s.textContent = 'Connexion…';
+    const ancien = config;
+    config = cfg;
+    try {
+      const res = await appel('liste');
+      ecrire(CLE, config);
+      appliquer(res);
+      demarrer();
+    } catch (err) {
+      config = ancien;
+      s.classList.add('err');
+      s.textContent = 'Impossible de se connecter : ' + (err.message || err) + ' Vérifie l\'adresse et le code secret.';
+    }
+  }
+  $('btnConnecter').addEventListener('click', () => {
+    const url = $('cfgUrl').value.trim();
+    const secret = $('cfgSecret').value;
+    if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) {
+      $('setupStatus').classList.add('err');
+      $('setupStatus').textContent = 'L\'adresse doit commencer par https://script.google.com/';
+      return;
+    }
+    connecter({ url, secret, prenom: $('cfgPrenom').value.trim() });
+  });
+  $('btnDemo').addEventListener('click', () => connecter({ url: 'demo', secret: '', prenom: 'Moi' }));
+
+  let intervalle = null;
+  function demarrer() {
+    $('ecranSetup').hidden = true;
+    $('ecranApp').hidden = false;
+    if (config.url === 'demo') statut('Mode démo : la liste reste sur ce téléphone.');
+    rendre();
+    gererEcranAllume();
+    clearInterval(intervalle);
+    intervalle = setInterval(rafraichir, 6000);
+  }
+
+  if (config && config.url) {
+    demarrer();
+    rafraichir();
+  } else {
+    $('ecranSetup').hidden = false;
+  }
+})();
+</script>
+</body>
+</html>
