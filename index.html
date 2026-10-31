@@ -27,6 +27,7 @@
   --store: #C2571A;
   --store-soft: #F8E7DC;
   --danger: #B3261E;
+  --invoice: #3559A8;
   --shadow: 0 10px 30px rgba(24, 35, 28, .14);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   --font-round: ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", sans-serif;
@@ -36,7 +37,7 @@
   :root {
     --bg: #0F1511; --surface: #18201A; --ink: #E8EEE6; --muted: #93A096; --line: #29332B;
     --accent: #5DBB82; --accent-soft: #1F3326; --on-accent: #0B140E;
-    --store: #F08A4B; --store-soft: #3A2417; --danger: #F2827A;
+    --store: #F08A4B; --store-soft: #3A2417; --danger: #F2827A; --invoice: #8FA9F0;
     --shadow: 0 10px 30px rgba(0, 0, 0, .5);
     color-scheme: dark;
   }
@@ -65,7 +66,10 @@ button { cursor: pointer; }
 .top.scrolled { border-bottom-color: var(--line); }
 .title-row { display: flex; align-items: center; gap: 12px; }
 .title-row h1 { margin: 0; font: 800 30px/1.1 var(--font-round); letter-spacing: -.02em; flex: 1; }
-.count { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.title-row h1 { white-space: nowrap; }
+.count { color: var(--muted); font-size: 13px; line-height: 1.3; text-align: right; font-variant-numeric: tabular-nums; }
+.count span { display: block; white-space: nowrap; }
+.count .cf { color: var(--invoice); font-weight: 650; }
 .icon-btn {
   width: 40px; height: 40px; border-radius: 12px; border: 0; background: var(--surface);
   display: grid; place-items: center; color: var(--ink); box-shadow: 0 1px 0 var(--line);
@@ -113,6 +117,18 @@ main { padding-top: 6px; padding-bottom: 120px; }
 .qty { font-size: 13px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 2px 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .by { font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; width: 22px; height: 22px; display: grid; place-items: center; flex: none; }
 .item.pending { opacity: .5; }
+.fact { font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; color: var(--invoice); border: 1.5px solid var(--invoice); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.aisle.invoice h2 { color: var(--invoice); }
+.aisle.invoice .items { box-shadow: 0 0 0 1.5px var(--invoice); }
+.toggle { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px 14px; text-align: left; width: 100%; }
+.toggle .t { flex: 1; min-width: 0; }
+.toggle .t strong { display: block; font-size: 16px; }
+.toggle .t span { font-size: 13px; color: var(--muted); }
+.toggle .sw { width: 46px; height: 28px; border-radius: 14px; background: var(--line); position: relative; flex: none; transition: background .2s; }
+.toggle .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+.toggle[aria-pressed="true"] { border-color: var(--invoice); }
+.toggle[aria-pressed="true"] .sw { background: var(--invoice); }
+.toggle[aria-pressed="true"] .sw::after { transform: translateX(18px); }
 
 /* Mode magasin */
 body.store .item { min-height: 60px; padding: 15px 14px; }
@@ -264,6 +280,10 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
     </div>
     <label class="f">Rayon (l'app s'en souviendra)</label>
     <div class="chips" id="faRayons"></div>
+    <button class="toggle" id="faFacture" type="button" aria-pressed="false">
+      <span class="t"><strong>Sur facture</strong><span>Pour la société : passé à part, TVA récupérée. L'app s'en souviendra.</span></span>
+      <span class="sw" aria-hidden="true"></span>
+    </button>
     <button class="btn" id="faEnregistrer">Enregistrer</button>
     <button class="btn danger" id="faSupprimer">Retirer de la liste</button>
   </div>
@@ -349,7 +369,9 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
       const s = lire('courses.demo');
       if (s) return s;
       const ex = [['Bananes', ''], ['Tomates', '6'], ['Baguette', '2'], ['Lait', ''], ['Beurre', ''], ['Yaourts nature', '8'], ['Steak haché', '4'], ['Pâtes', ''], ['Café', ''], ['Papier toilette', '']];
-      return { rayons: this.rayons.slice(), articles: ex.map(([nom, quantite], i) => ({ id: 'd' + i, nom, quantite, rayon: this.deviner(nom), par: i % 3 ? 'Moi' : 'Elle' })) };
+      const articles = ex.map(([nom, quantite], i) => ({ id: 'd' + i, nom, quantite, rayon: this.deviner(nom), par: i % 3 ? 'Moi' : 'Elle' }));
+      articles.push({ id: 'dc', nom: 'Croquettes chien', quantite: '', rayon: 'Autre', par: 'Moi', facture: true });
+      return { rayons: this.rayons.slice(), articles };
     },
     async appel(action, p) {
       await new Promise(r => setTimeout(r, 250));
@@ -369,7 +391,7 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
         s.articles = s.articles.filter(a => a.id !== p.id);
       } else if (action === 'modifier') {
         const a = s.articles.find(x => x.id === p.id);
-        if (a) Object.assign(a, { nom: p.nom || a.nom, quantite: p.quantite ?? a.quantite, rayon: p.rayon || a.rayon });
+        if (a) Object.assign(a, { nom: p.nom || a.nom, quantite: p.quantite ?? a.quantite, rayon: p.rayon || a.rayon, facture: p.facture ?? a.facture });
       } else if (action === 'rayons') {
         s.rayons = p.rayons;
       } else if (action === 'analyser') {
@@ -474,7 +496,11 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
 
     const articles = articlesVisibles();
     const n = articles.length;
-    $('compteur').textContent = n === 0 ? '' : n + (magasin ? (n > 1 ? ' restants' : ' restant') : (n > 1 ? ' articles' : ' article'));
+    const nFacture = articles.filter(a => a.facture).length;
+    $('compteur').replaceChildren(...(n === 0 ? [] : [
+      el('span', { text: n + (magasin ? (n > 1 ? ' restants' : ' restant') : (n > 1 ? ' articles' : ' article')) }),
+      nFacture ? el('span', { class: 'cf', text: nFacture + ' sur facture' }) : null
+    ].filter(Boolean)));
 
     const prog = $('progression');
     prog.hidden = !magasin;
@@ -500,9 +526,12 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
       return;
     }
 
+    // En mode liste, les articles "sur facture" sont regroupés à part ;
+    // au magasin, ils restent dans leur rayon avec une étiquette.
+    const aFacturer = magasin ? [] : articles.filter(a => a.facture);
     const ordre = etat.rayons.length ? etat.rayons.slice() : ['Autre'];
     const groupes = new Map(ordre.map(r => [r, []]));
-    articles.forEach(a => {
+    articles.filter(a => magasin || !a.facture).forEach(a => {
       const r = groupes.has(a.rayon) ? a.rayon : 'Autre';
       if (!groupes.has(r)) groupes.set(r, []);
       groupes.get(r).push(a);
@@ -516,6 +545,15 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
         el('ul', { class: 'items' }, liste.map(a => ligneArticle(a, magasin)))
       ));
     });
+
+    if (aFacturer.length) {
+      const rang = r => { const i = ordre.indexOf(r); return i === -1 ? ordre.length : i; };
+      aFacturer.sort((a, b) => rang(a.rayon) - rang(b.rayon) || a.nom.localeCompare(b.nom, 'fr'));
+      zone.append(el('section', { class: 'aisle invoice' },
+        el('h2', null, 'Sur facture', el('span', { class: 'n', text: String(aFacturer.length) })),
+        el('ul', { class: 'items' }, aFacturer.map(a => ligneArticle(a, magasin)))
+      ));
+    }
   }
 
   // Pour la barre de progression : le plus grand nombre d'articles vu depuis l'entrée en mode magasin
@@ -527,6 +565,7 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
     if (magasin) li.append(el('span', { class: 'tick' }, coche()));
     li.append(el('span', { class: 'name', text: a.nom }));
     if (a.quantite) li.append(el('span', { class: 'qty', text: a.quantite }));
+    if (magasin && a.facture) li.append(el('span', { class: 'fact', text: 'Facture' }));
     if (!magasin && a.par) li.append(el('span', { class: 'by', title: 'Ajouté par ' + a.par, text: a.par.charAt(0).toUpperCase() }));
     const action = () => magasin ? prendre(a, li) : ouvrirArticle(a);
     li.addEventListener('click', action);
@@ -629,9 +668,16 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
   // Modifier un article
   let articleEdite = null;
   let rayonChoisi = null;
+  let factureChoisie = false;
+  $('faFacture').addEventListener('click', () => {
+    factureChoisie = !factureChoisie;
+    $('faFacture').setAttribute('aria-pressed', String(factureChoisie));
+  });
   function ouvrirArticle(a) {
     articleEdite = a;
     rayonChoisi = a.rayon;
+    factureChoisie = !!a.facture;
+    $('faFacture').setAttribute('aria-pressed', String(factureChoisie));
     $('faTitre').textContent = a.nom;
     $('faNom').value = a.nom;
     $('faQte').value = a.quantite || '';
@@ -651,11 +697,13 @@ label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: var
     if (!a) return;
     const modif = { id: a.id, nom: $('faNom').value.trim() || a.nom, quantite: $('faQte').value.trim() };
     if (rayonChoisi !== a.rayon) modif.rayon = rayonChoisi;
-    Object.assign(a, { nom: modif.nom, quantite: modif.quantite, rayon: rayonChoisi });
+    if (factureChoisie !== !!a.facture) modif.facture = factureChoisie;
+    Object.assign(a, { nom: modif.nom, quantite: modif.quantite, rayon: rayonChoisi, facture: factureChoisie });
     rendre();
     fermer();
     envoyer('modifier', modif).then(() => {
       if (modif.rayon) toast(a.nom + ' ira toujours dans « ' + modif.rayon + ' »');
+      else if (modif.facture !== undefined) toast(a.nom + (modif.facture ? ' sera toujours sur facture' : ' ne sera plus sur facture'));
     }).catch(() => {});
   });
   $('faSupprimer').addEventListener('click', () => {
